@@ -42,7 +42,7 @@ create table if not exists teamStats (
 	teamNumber int not null,
 	averageSeed float(5, 3) not null,
 	averageCCWM float(6, 3) not null,
-	eventWins int not null default 0
+	eventWins int default 0
 );
 
 create table if not exists pickListTeams (
