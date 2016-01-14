@@ -9,11 +9,12 @@ var SocketHandler = function(socket, namespace) {
 	}
 
 	var send = function(type, data) {
-		console.log(eventFor(type), data)
+		console.log(eventFor(type))
 		socket.emit(eventFor(type), data)
 	}
 
 	var error = function(type, error) {
+		console.log(eventFor(type) + ' ERROR')
 		var data = {
 			type: 'error'
 		}
