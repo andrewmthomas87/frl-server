@@ -7,7 +7,7 @@ function team(socket) {
 	var teamSocketHandler = SocketHandler(socket, 'Team')
 
 	teamSocketHandler.register('get', function(teamNumber) {
-		connection.querySelector('select a.teamNumber, name, website, location, rookieYear, averageSeed, averageCCWM from teams a teamStats b where a.teamNumber=b.teamNumber', function(error, rows) {
+		connection.query('select a.teamNumber, name, website, location, rookieYear, averageSeed, averageCCWM from teams a, teamStats b where a.teamNumber=b.teamNumber && a.teamNumber=?', [teamNumber], function(error, rows) {
 			if (error) {
 				teamSocketHandler.error('get', 'Error fetching team')
 				return
@@ -15,9 +15,31 @@ function team(socket) {
 
 			if (!rows.length) {
 				teamSocketHandler.error('get', 'Invalid team number')
+				return
 			}
 
-			teamSocketHandler.send('get', rows[0])
+			var team = rows[0]
+
+			connection.query('select a.code, name, week from teamEvents a, events b where a.code=b.code && teamNumber=?', [teamNumber], function(error, rows) {
+				if (error) {
+					teamSocketHandler.error('get', 'Server error')
+					return
+				}
+
+				if (rows.length) {
+					team.events = rows.map(function(row) {
+						return {
+							code: row.code,
+							name: row.name
+						}
+					})
+					team.weeks = rows.map(function(row) {
+						return row.week
+					})
+				}
+
+				teamSocketHandler.send('get', team)
+			})
 		})
 	})
 }
