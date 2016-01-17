@@ -7,9 +7,10 @@ function events(socket) {
 	var eventsSocketHandler = SocketHandler(socket, 'Events')
 
 	eventsSocketHandler.register('getSearchables', function() {
-		connection.query('select code, name from events', function(error, rows) {
+		connection.query('select code "key", name from events', function(error, rows) {
 			if (error) {
 				eventsSocketHandler.error('getSearchables', 'Error fetching events')
+				return
 			}
 
 			eventsSocketHandler.send('getSearchables', rows)

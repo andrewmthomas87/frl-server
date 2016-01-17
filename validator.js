@@ -25,6 +25,15 @@ var validator = (function() {
 		return !!password || 'Empty input'
 	}
 
+	return {
+		firstName: firstName,
+		lastName: lastName,
+		email: email,
+		position: position,
+		slack: slack,
+		password: password
+	}
+
 })()
 
 module.exports = validator
