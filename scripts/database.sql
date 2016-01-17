@@ -9,7 +9,8 @@ create table if not exists users (
 	lastName varchar(100) not null,
 	position tinyint(1) not null,
 	password varchar(100) not null,
-	slack varchar(100)
+	slack varchar(100),
+	admin tinyint(1) not null default 0
 );
 
 create table if not exists userPictures (
@@ -22,7 +23,8 @@ create table if not exists teams (
 	name varchar(500) not null,
 	website varchar(500),
 	location varchar(100),
-	rookieYear int
+	rookieYear int,
+	owner int
 );
 
 create table if not exists events (
@@ -49,4 +51,10 @@ create table if not exists pickListTeams (
 	id int not null,
 	teamNumber int not null,
 	listIndex int not null
+);
+
+create table if not exists activeTeams (
+	id int not null,
+	teamNumber int not null,
+	week int not null
 );
