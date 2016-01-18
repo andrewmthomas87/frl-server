@@ -58,3 +58,9 @@ create table if not exists activeTeams (
 	teamNumber int not null,
 	week int not null
 );
+
+create table if not exists draftOrder (
+	id primary key,
+	order int not null,
+	active tinyint(1) not null default 0
+);
