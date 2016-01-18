@@ -1,5 +1,7 @@
 var validationUtility = require('validator')
 
+var bcrypt = require('bcrypt')
+
 var config = require('../config')
 var connection = require('../database')
 var validator = require('../validator')
@@ -161,6 +163,60 @@ function user(socket) {
 		else {
 			userSocketHandler.error('updateSlack', valid)
 		}
+	})
+
+	userSocketHandler.register('updatePassword', function(passwords) {
+		var currentPassword = passwords.currentPassword.trim()
+		var newPassword = passwords.newPassword.trim()
+		var confirmPassword = passwords.confirmPassword.trim()
+
+		if (!(currentPassword && newPassword && confirmPassword)) {
+			userSocketHandler.error('updatePassword', 'Invalid inputs')
+			return
+		}
+
+		connection.query('select password from users where id=?', [socket.decodedToken.id], function(error, rows) {
+			bcrypt.compare(currentPassword, rows[0].password, function(error, result) {
+				if (error) {
+					userSocketHandler.error('updatePassword', 'Server error')
+					return
+				}
+
+				if (result) {
+					if (newPassword === confirmPassword) {
+						const valid = validator.password(newPassword)
+
+						if (valid === true) {
+							bcrypt.hash(newPassword, 8, function(error, hash) {
+								if (error) {
+									userSocketHandler.error('updatePassword', 'Server error')
+									return
+								}
+
+								connection.query('update users set password=? where id=?', [hash, socket.decodedToken.id], function(error) {
+									if (error) {
+										userSocketHandler.error('updatePassword', 'Server error')
+										return
+									}
+
+									userSocketHandler.send('updatePassword', 'Updated password')
+								})
+							})
+						}
+						else {
+							userSocketHandler.error('updatePassword', valid)
+						}
+					}
+					else {
+						userSocketHandler.error('updatePassword', 'Passwords do not match')
+					}
+				}
+				else {
+					userSocketHandler.error('updatePassword', 'Invalid password')
+				}
+			})
+		})
+
 	})
 
 }

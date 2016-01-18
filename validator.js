@@ -50,8 +50,7 @@ var validator = (function() {
 		if (password.length < 6) {
 			return 'Password must contain at least 6 characters'
 		}
-
-		if (validatorUtility.isAscii(password)) {
+		if (!validatorUtility.isAscii(password)) {
 			return 'Password must not contain invalid characters'
 		}
 
