@@ -6,6 +6,17 @@ var SocketHandler = require('./SocketHandler')
 function users(socket) {
 	var usersSocketHandler = SocketHandler(socket, 'Users')
 
+	usersSocketHandler.register('get', function() {
+		connection.query('select id, concat(firstName, " ", lastName) name from users', function(error, rows) {
+			if (error) {
+				usersSocketHandler.error('get', 'Error fetching users')
+				return
+			}
+
+			usersSocketHandler.send('get', rows)
+		})
+	})
+
 	usersSocketHandler.register('getSearchables', function() {
 		connection.query('select id "key", concat(firstName, " ", lastName) name from users where id<>?', [socket.decodedToken.id], function(error, rows) {
 			if (error) {
