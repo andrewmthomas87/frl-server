@@ -85,7 +85,7 @@ function admin(socket) {
 
 	adminSocketHandler.register('getDraftOrder', function() {
 		if (!isAdmin(socket.decodedToken.id)) {
-			adminSocketHandler.error('Access denied')
+			adminSocketHandler.error('getDraftOrder', 'Access denied')
 			return
 		}
 
@@ -96,6 +96,34 @@ function admin(socket) {
 			}
 
 			adminSocketHandler.send('getDraftOrder', rows)
+		})
+	})
+
+	adminSocketHandler.register('removeUser', function(id) {
+		if (!isAdmin(socket.decodedToken.id)) {
+			adminSocketHandler.error('removeUser', 'Access denied')
+			return
+		}
+
+		connection.query('select id from users where id=?', [id], function(error, rows) {
+			if (error) {
+				adminSocketHandler.error('removeUser', 'Server error')
+				return
+			}
+
+			if (!rows.length) {
+				adminSocketHandler.error('removeUser', 'Invalid user id')
+				return
+			}
+
+			connection.query('delete from users where id=?', [id], function(error) {
+				if (error) {
+					adminSocketHandler.error('removeUser', 'Server error')
+					return
+				}
+
+				adminSocketHandler.send('removeUser', 'Removed user')
+			})
 		})
 	})
 }

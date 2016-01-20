@@ -21,17 +21,23 @@ io.on('connection', function(socket) {
 				socket.disconnect('unauthorized')
 			}
 			if (!error && decoded) {
-				io.sockets.connected[socket.id] = socket
+				connection.query('select id from users where id=?', [decoded.id], function(error, rows) {
+					if (error || !rows.length) {
+						return
+					}
 
-				socket.decodedToken = decoded
-				socket.connectedAt = new Date()
+					io.sockets.connected[socket.id] = socket
 
-				socket.on('disconnect', function() {
-					console.info('SOCKET [%s] DISCONNECTED', socket.id)
+					socket.decodedToken = decoded
+					socket.connectedAt = new Date()
+
+					socket.on('disconnect', function() {
+						console.info('SOCKET [%s] DISCONNECTED', socket.id)
+					})
+
+					console.info('SOCKET [%s] CONNECTED', socket.id)
+					socket.emit('authenticated')
 				})
-
-				console.info('SOCKET [%s] CONNECTED', socket.id)
-				socket.emit('authenticated')
 			}
 		})
 	})
