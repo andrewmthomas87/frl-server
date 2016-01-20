@@ -35,13 +35,19 @@ app.post('/api/signIn', function(request, response) {
 
 	connection.query('select id, email, password from users where email=?', [email], function(error, rows) {
 		if (error) {
-			throw error
+			response.json({
+				error: 'Server error'
+			})
+			return
 		}
 
 		if (rows.length) {
 			bcrypt.compare(password, rows[0].password, function(error, result) {
 				if (error) {
-					throw error
+					response.json({
+						error: 'Server error'
+					})
+					return
 				}
 
 				if (result) {
@@ -98,7 +104,10 @@ app.post('/api/signUp', function(request, response) {
 
 	connection.query('select id from users where email=?', [email], function(error, rows) {
 		if (error) {
-			throw error
+			response.json({
+				error: 'Server error'
+			})
+			return
 		}
 
 		if (rows.length) {
@@ -110,17 +119,26 @@ app.post('/api/signUp', function(request, response) {
 
 		bcrypt.hash(password, 8, function(error, hash) {
 			if (error) {
-				throw error
+				response.json({
+					error: 'Server error'
+				})
+				return
 			}
 
 			connection.query('insert into users (firstName, lastName, email, position, password) values (?, ?, ?, ?, ?)', [firstName, lastName, email, position, hash], function(error) {
 				if (error) {
-					throw error
+					response.json({
+						error: 'Server error'
+					})
+					return				
 				}
 
 				connection.query('select id, email from users where email=?', [email], function(error, rows) {
 					if (error) {
-						throw error
+						response.json({
+							error: 'Server error'
+						})
+						return				
 					}
 
 					var profile = {
