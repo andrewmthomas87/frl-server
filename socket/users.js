@@ -3,8 +3,8 @@ var connection = require('../database')
 
 var SocketHandler = require('./SocketHandler')
 
-function users(socket) {
-	var usersSocketHandler = SocketHandler(socket, 'Users')
+function users(io, socket) {
+	var usersSocketHandler = SocketHandler(io, socket, 'Users')
 
 	usersSocketHandler.register('get', function() {
 		connection.query('select id, concat(firstName, " ", lastName) name from users', function(error, rows) {

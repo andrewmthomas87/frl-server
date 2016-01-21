@@ -3,8 +3,8 @@ var connection = require('../database')
 
 var SocketHandler = require('./SocketHandler')
 
-function team(socket) {
-	var teamSocketHandler = SocketHandler(socket, 'Team')
+function team(io, socket) {
+	var teamSocketHandler = SocketHandler(io, socket, 'Team')
 
 	teamSocketHandler.register('get', function(teamNumber) {
 		connection.query('select a.teamNumber, name, website, location, rookieYear, averageSeed, averageCCWM from teams a, teamStats b where a.teamNumber=b.teamNumber && a.teamNumber=?', [teamNumber], function(error, rows) {

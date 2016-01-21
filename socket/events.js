@@ -3,8 +3,8 @@ var connection = require('../database')
 
 var SocketHandler = require('./SocketHandler')
 
-function events(socket) {
-	var eventsSocketHandler = SocketHandler(socket, 'Events')
+function events(io, socket) {
+	var eventsSocketHandler = SocketHandler(io, socket, 'Events')
 
 	eventsSocketHandler.register('getSearchables', function() {
 		connection.query('select code "key", name from events', function(error, rows) {

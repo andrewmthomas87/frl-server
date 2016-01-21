@@ -6,14 +6,14 @@ var teams = require('./teams')
 var user = require('./user')
 var users = require('./users')
 
-function registerSocketHandlers(socket) {
-	admin(socket)
-	event(socket)
-	events(socket)
-	team(socket)
-	teams(socket)
-	user(socket)
-	users(socket)
+function registerSocketHandlers(io, socket) {
+	admin(io, socket)
+	event(io, socket)
+	events(io, socket)
+	team(io, socket)
+	teams(io, socket)
+	user(io, socket)
+	users(io, socket)
 }
 
 module.exports = registerSocketHandlers

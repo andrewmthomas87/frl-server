@@ -8,8 +8,8 @@ var validator = require('../validator')
 
 var SocketHandler = require('./SocketHandler')
 
-function user(socket) {
-	var userSocketHandler = SocketHandler(socket, 'User')
+function user(io, socket) {
+	var userSocketHandler = SocketHandler(io, socket, 'User')
 
 	userSocketHandler.register('get', function(id) {
 		id = id || socket.decodedToken.id
@@ -60,6 +60,7 @@ function user(socket) {
 				}
 
 				userSocketHandler.send('updateFirstName', 'Updated first name')
+				userSocketHandler.update(firstName, 'UserUpdate.firstName')
 			})
 		}
 		else {
@@ -83,6 +84,7 @@ function user(socket) {
 				}
 
 				userSocketHandler.send('updateLastName', 'Updated last name')
+				userSocketHandler.update(lastName, 'UserUpdate.lastName')
 			})
 		}
 		else {
@@ -108,33 +110,11 @@ function user(socket) {
 				}
 
 				userSocketHandler.send('updateEmail', 'Updated email')
+				userSocketHandler.update(email, 'UserUpdate.email')
 			})
 		}
 		else {
 			userSocketHandler.error('updateEmail', valid)
-		}
-	})
-
-	userSocketHandler.register('updatePosition', function(position) {
-		position = parseInt(position)
-
-		const valid = validator.position(position)
-
-		if (valid === true) {
-			connection.query('update users set position=? where id=?', [
-				position,
-				socket.decodedToken.id
-			], function(error) {
-				if (error) {
-					userSocketHandler.error('updatePosition', 'Server error')
-					return
-				}
-
-				userSocketHandler.send('updatePosition', 'Updated position')
-			})
-		}
-		else {
-			userSocketHandler.error('updatePosition', valid)
 		}
 	})
 
@@ -158,6 +138,7 @@ function user(socket) {
 				}
 
 				userSocketHandler.send('updateSlack', 'Updated slack')
+				userSocketHandler.update(slack, 'UserUpdate.slack')
 			})
 		}
 		else {
