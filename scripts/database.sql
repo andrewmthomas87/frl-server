@@ -60,7 +60,7 @@ create table if not exists activeTeams (
 );
 
 create table if not exists draftOrder (
-	id primary key,
-	order int not null,
+	id int primary key,
+	position int not null,
 	active tinyint(1) not null default 0
 );
