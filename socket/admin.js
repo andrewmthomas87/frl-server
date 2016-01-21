@@ -37,7 +37,7 @@ function admin(socket) {
 			return
 		}
 
-		connection.query('select count(*) generated from draftOrder', function(error, rows) {
+		connection.query('select count(*) "generated" from draftOrder', function(error, rows) {
 			if (error) {
 				adminSocketHandler.error('generateDraft', 'Server error')
 				return
