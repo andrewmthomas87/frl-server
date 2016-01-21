@@ -3,8 +3,8 @@ var connection = require('../database')
 
 var SocketHandler = require('./SocketHandler')
 
-function event(socket) {
-	var eventSocketHandler = SocketHandler(socket, 'Event')
+function event(io, socket) {
+	var eventSocketHandler = SocketHandler(io, socket, 'Event')
 
 	eventSocketHandler.register('get', function(code) {
 		connection.query('select code, name, type, week, location from events where code=?', [code], function(error, rows) {

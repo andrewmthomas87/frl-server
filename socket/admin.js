@@ -19,8 +19,8 @@ function isAdmin(id) {
 	return admins.indexOf(id) > -1
 }
 
-function admin(socket) {
-	var adminSocketHandler = SocketHandler(socket, 'Admin')
+function admin(io, socket) {
+	var adminSocketHandler = SocketHandler(io, socket, 'Admin')
 
 	adminSocketHandler.register('verify', function() {
 		if (isAdmin(socket.decodedToken.id)) {

@@ -4,6 +4,7 @@ var jwt = require('jsonwebtoken')
 var config = require('./config')
 var connection = require('./database')
 
+var connected = require('./connected')
 var registerSocketHandlers = require('./socket/all')
 
 io.on('connection', function(socket) {
@@ -31,7 +32,17 @@ io.on('connection', function(socket) {
 					socket.decodedToken = decoded
 					socket.connectedAt = new Date()
 
+					connected.add(socket)
+
 					socket.on('disconnect', function() {
+						var socketIDs = connected.get(socket.decodedToken.id)
+
+						socketIDs.forEach(function(socketID) {
+							io.to(socketID).emit('UserUpdate.signOut', true)
+						})
+
+						connected.remove(socket)
+
 						console.info('SOCKET [%s] DISCONNECTED', socket.id)
 					})
 
@@ -42,5 +53,5 @@ io.on('connection', function(socket) {
 		})
 	})
 
-	registerSocketHandlers(socket)
+	registerSocketHandlers(io, socket)
 })

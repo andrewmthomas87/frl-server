@@ -3,8 +3,8 @@ var connection = require('../database')
 
 var SocketHandler = require('./SocketHandler')
 
-function teams(socket) {
-	var teamsSocketHandler = SocketHandler(socket, 'Teams')
+function teams(io, socket) {
+	var teamsSocketHandler = SocketHandler(io, socket, 'Teams')
 
 	teamsSocketHandler.register('get', function() {
 		connection.query('select teamNumber, name from teams', function(error, rows) {

@@ -1,4 +1,6 @@
-var SocketHandler = function(socket, namespace) {
+var connected = require('../connected')
+
+var SocketHandler = function(io, socket, namespace) {
 
 	var eventFor = function(type) {
 		return namespace + '.' + type
@@ -29,10 +31,26 @@ var SocketHandler = function(socket, namespace) {
 		socket.emit(eventFor(type), data)
 	}
 
+	var blast = function(data, event) {
+		console.log(event || 'Notification')
+		io.emit(event || 'Notification', data)
+	}
+
+	var update = function(data, event) {
+		console.log(event || 'Notification')
+		var socketIDs = connected.get(socket.decodedToken.id)
+
+		socketIDs.forEach(function(socketID) {
+			io.to(socketID).emit(event || 'Notification', data)
+		})
+	}
+
 	return {
 		register: register,
 		send: send,
-		error: error
+		error: error,
+		blast: blast,
+		update: update
 	}
 
 }
