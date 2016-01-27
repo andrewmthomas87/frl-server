@@ -7,7 +7,7 @@ function teams(io, socket) {
 	var teamsSocketHandler = SocketHandler(io, socket, 'Teams')
 
 	teamsSocketHandler.register('get', function() {
-		connection.query('select teamNumber, name from teams', function(error, rows) {
+		connection.query('select teamNumber, name, owner from teams', function(error, rows) {
 			if (error) {
 				teamsSocketHandler.error('get', 'Error fetching teams')
 				return
@@ -18,6 +18,7 @@ function teams(io, socket) {
 			for (var i = 0; i < rows.length; ++i) {
 				teams[rows[i].teamNumber] = {
 					name: rows[i].name,
+					owner: rows[i].owner,
 					weeks: []
 				}
 			}

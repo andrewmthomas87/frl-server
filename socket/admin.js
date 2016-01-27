@@ -1,3 +1,5 @@
+var Promise = require('promise')
+
 var config = require('../config')
 var connection = require('../database')
 
@@ -29,6 +31,22 @@ function admin(io, socket) {
 		else {
 			adminSocketHandler.error('verify', 'Access denied')
 		}
+	})
+
+	adminSocketHandler.register('resetDraft', function() {
+		if (!isAdmin(socket.decodedToken.id)) {
+			adminSocketHandler.error('resetDraft', 'Access denied')
+			return
+		}
+
+		connection.query('truncate table draftOrder', function(error) {
+			if (error) {
+				adminSocketHandler.error('resetDraft', 'Server error')
+				return
+			}
+
+			adminSocketHandler.send('resetDraft', 'Draft reset')
+		})
 	})
 
 	adminSocketHandler.register('generateDraft', function() {
@@ -89,13 +107,176 @@ function admin(io, socket) {
 			return
 		}
 
-		connection.query('select a.id, concat(firstName, " ", lastName) name, b.position, active from users a, draftOrder b where a.id=b.id order by position', function(error, rows) {
+		connection.query('select a.id, concat(firstName, " ", lastName) name, b.position, active from users a, draftOrder b where a.id=b.id order by b.position', function(error, rows) {
 			if (error) {
 				adminSocketHandler.error('getDraftOrder', 'Server error')
 				return
 			}
 
 			adminSocketHandler.send('getDraftOrder', rows)
+		})
+	})
+
+	adminSocketHandler.register('startDraft', function() {
+		if (!isAdmin(socket.decodedToken.id)) {
+			adminSocketHandler.error('startDraft', 'Access denied')
+			return
+		}
+
+		connection.query('select active from draftOrder where active>0', function(error, rows) {
+			if (error) {
+				adminSocketHandler.error('startDraft', 'Server error')
+				return
+			}
+
+			if (rows.length) {
+				adminSocketHandler.send('startDraft', rows[0].active)
+				return
+			}
+
+			connection.query('update draftOrder set active=1 where position=0', function(error) {
+				if (error) {
+					adminSocketHandler.error('startDraft', 'Server error')
+					return
+				}
+
+				adminSocketHandler.send('startDraft', 1)
+			})
+		})
+	})
+
+	adminSocketHandler.register('getDraftNextUp', function() {
+		if (!isAdmin(socket.decodedToken.id)) {
+			adminSocketHandler.error('getDraftNextUp', 'Access denied')
+			return
+		}
+
+		connection.query('select concat(firstName, " ", lastName) name, b.position, active from users a, draftOrder b where a.id=b.id && active>0', function(error, rows) {
+			if (error) {
+				adminSocketHandler.error('getDraftNextUp', 'Server error')
+				return
+			}
+
+			if (!rows.length) {
+				adminSocketHandler.error('getDraftNextUp', 'Draft not in progress')
+				return
+			}
+
+			var users = rows.slice(0, 1).map(function(user) {
+				return {
+					name: user.name,
+					position: user.position
+				}
+			})
+
+			var position = rows[0].position
+			var active = rows[0].active
+
+			var sign = active % 2 === 0 ? '<' : '>'
+			var sort = active % 2 === 0 ? 'desc' : 'asc'
+
+			connection.query('select concat(firstName, " ", lastName) name, b.position from users a, draftOrder b where a.id=b.id && b.position' + sign + position + ' order by b.position ' + sort + ' limit 5', function(error, rows) {
+				if (error) {
+					adminSocketHandler.error('getDraftNextUp', 'Server error')
+					return
+				}
+
+				users = users.concat(rows.map(function(user) {
+					return {
+						name: user.name,
+						position: user.position
+					}
+				}))
+
+				adminSocketHandler.send('getDraftNextUp', {
+					round: active,
+					nextUp: users
+				})
+			})
+		})
+	})
+
+	adminSocketHandler.register('draftSelectTeam', function(teamNumber) {
+		if (!isAdmin(socket.decodedToken.id)) {
+			adminSocketHandler.error('getDraftNextUp', 'Access denied')
+			return
+		}
+
+		connection.query('select owner from teams where teamNumber=?', [teamNumber], function(error, rows) {
+			if (error) {
+				adminSocketHandler.error('draftSelectTeam', 'Server error')
+				return
+			}
+
+			if (!rows.length) {
+				adminSocketHandler.error('draftSelectTeam', 'Invalid team number')
+				return
+			}
+
+			if (rows[0].owner) {
+				adminSocketHandler.error('draftSelectTeam', 'Team not available')
+				return
+			}
+
+			connection.query('select a.id, a.position, a.active, concat(b.firstName, " ", b.lastName) name from draftOrder a, users b where a.id=b.id && active>0', function(error, rows) {
+				if (error) {
+					adminSocketHandler.error('draftSelectTeam', 'Server error')
+					return
+				}
+
+				if (!rows.length) {
+					adminSocketHandler.error('draftSelectTeam', 'Draft not in progress')
+					return
+				}
+
+				var id = rows[0].id
+				var position = rows[0].position
+				var active = rows[0].active
+				var name = rows[0].name
+
+				var nextPosition = position + (active % 2 === 0 ? -1 : 1)
+
+				connection.query('select id from draftOrder where position=?', [nextPosition], function(error, rows) {
+					if (error) {
+						adminSocketHandler.error('draftSelectTeam', 'Server error')
+						return
+					}
+
+					if (!rows.length) {
+						active++
+						nextPosition = position
+					}
+
+					connection.query('update draftOrder set active=0 where position=?', [position], function(error) {
+						if (error) {
+							adminSocketHandler.error('draftSelectTeam', 'Server error')
+							return
+						}
+
+						connection.query('update draftOrder set active=? where position=?', [
+							active,
+							nextPosition
+						], function(error) {
+							if (error) {
+								adminSocketHandler.error('draftSelectTeam', 'Server error')
+								return
+							}
+
+							connection.query('update teams set owner=? where teamNumber=?', [
+								id,
+								teamNumber
+							], function(error) {
+								if (error) {
+									adminSocketHandler.error('draftSelectTeam', 'Server error')
+									return
+								}
+
+								adminSocketHandler.send('draftSelectTeam', name + ' selected team ' + teamNumber)
+							})
+						})
+					})
+				})
+			})
 		})
 	})
 
