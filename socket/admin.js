@@ -45,7 +45,14 @@ function admin(io, socket) {
 				return
 			}
 
-			adminSocketHandler.send('resetDraft', 'Draft reset')
+			connection.query('update teams set owner=?', [null], function(error) {
+				if (error) {
+					adminSocketHandler.error('resetDraft', 'Server error')
+					return
+				}
+
+				adminSocketHandler.send('resetDraft', 'Draft reset')
+			})
 		})
 	})
 
@@ -272,6 +279,11 @@ function admin(io, socket) {
 								}
 
 								adminSocketHandler.send('draftSelectTeam', name + ' selected team ' + teamNumber)
+								adminSocketHandler.blast({
+									teamNumber: teamNumber,
+									owner: id,
+									name: name
+								}, 'TeamUpdate.owner')
 							})
 						})
 					})
