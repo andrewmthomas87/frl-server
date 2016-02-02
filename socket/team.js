@@ -7,7 +7,7 @@ function team(io, socket) {
 	var teamSocketHandler = SocketHandler(io, socket, 'Team')
 
 	teamSocketHandler.register('get', function(teamNumber) {
-		connection.query('select a.teamNumber, name, website, location, rookieYear, averageSeed, averageCCWM from teams a, teamStats b where a.teamNumber=b.teamNumber && a.teamNumber=?', [teamNumber], function(error, rows) {
+		connection.query('select a.teamNumber, name, website, location, rookieYear, owner, averageSeed, averageCCWM from teams a, teamStats b where a.teamNumber=b.teamNumber && a.teamNumber=?', [teamNumber], function(error, rows) {
 			if (error) {
 				teamSocketHandler.error('get', 'Error fetching team')
 				return
