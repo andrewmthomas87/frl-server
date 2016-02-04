@@ -44,6 +44,19 @@ function user(io, socket) {
 		})
 	})
 
+	userSocketHandler.register('getTeams', function(id) {
+		id = id || socket.decodedToken.id
+
+		connection.query('select teamNumber, name from teams where owner=?', [id], function(error, rows) {
+			if (error) {
+				userSocketHandler.error('getTeams', 'Server error')
+				return
+			}
+
+			userSocketHandler.send('getTeams', rows)
+		})
+	})
+
 	userSocketHandler.register('updateFirstName', function(firstName) {
 		firstName = firstName || ''
 
