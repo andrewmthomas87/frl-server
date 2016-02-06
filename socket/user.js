@@ -1,6 +1,7 @@
 var validationUtility = require('validator')
 
 var bcrypt = require('bcrypt')
+var fileType = require('file-type')
 
 var config = require('../config')
 var connection = require('../database')
@@ -34,7 +35,8 @@ function user(io, socket) {
 				}
 
 				if (rows.length) {
-					user.picture = rows[0]
+					var picture = rows[0].picture
+					user.picture = 'data:' + fileType(picture).mime + ';base64,' + picture.toString('base64')
 				}
 				else {
 					user.picture = config.defaultPicture
@@ -45,8 +47,6 @@ function user(io, socket) {
 	})
 
 	userSocketHandler.register('getTeams', function(id) {
-		id = id || socket.decodedToken.id
-
 		connection.query('select teamNumber, name from teams where owner=?', [id], function(error, rows) {
 			if (error) {
 				userSocketHandler.error('getTeams', 'Server error')
@@ -211,6 +211,53 @@ function user(io, socket) {
 			})
 		})
 
+	})
+
+	userSocketHandler.register('updatePicture', function(picture) {
+		if (picture && picture instanceof Buffer) {
+			if (picture.length > 65535) {
+				userSocketHandler.error('updatePicture', 'File size must be less than 65 kilobytes')
+				return
+			}
+
+			connection.query('select id from userPictures where id=?', [socket.decodedToken.id], function(error, rows) {
+				if (error) {
+					userSocketHandler.error('updatePicture', 'Server error')
+					return
+				}
+
+				if (rows.length) {
+					connection.query('update userPictures set picture=? where id=?', [picture, socket.decodedToken.id], function(error) {
+						if (error) {
+							userSocketHandler.error('updatePicture', 'Server error')
+							return
+						}
+
+						userSocketHandler.send('updatePicture', 'Updated picture')
+					})
+				}
+				else {
+					connection.query('insert into userPictures (id, picture) values (?, ?)', [socket.decodedToken.id, picture], function(error) {
+						if (error) {
+							userSocketHandler.error('updatePicture', 'Server error')
+							return
+						}
+
+						userSocketHandler.send('updatePicture', 'Updated picture')
+					})
+				}
+			})
+		}
+		else {
+			connection.query('delete from userPictures where id=?', [socket.decodedToken.id], function(error) {
+				if (error) {
+					userSocketHandler.error('updatePicture', 'Server error')
+					return
+				}
+
+				userSocketHandler.send('updatePicture', 'Updated picture to default')
+			})
+		}
 	})
 
 }
