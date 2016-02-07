@@ -56,7 +56,7 @@ create table if not exists pickListTeams (
 create table if not exists activeTeams (
 	id int not null,
 	teamNumber int not null,
-	week int not null
+	active tinyint(1) not null
 );
 
 create table if not exists draftOrder (
