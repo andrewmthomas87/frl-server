@@ -57,6 +57,82 @@ function user(io, socket) {
 		})
 	})
 
+	userSocketHandler.register('getMyTeams', function() {
+		connection.query('select a.teamNumber, name, active from teams a left outer join activeTeams b on a.teamNumber=b.teamNumber where owner=?', [socket.decodedToken.id], function(error, rows) {
+			if (error) {
+				userSocketHandler.error('getMyTeams', 'Server error')
+				return
+			}
+
+			userSocketHandler.send('getMyTeams', rows)
+		})
+	})
+
+	userSocketHandler.register('selectTeam', function(teamNumber) {
+		connection.query('select count(*) count from activeTeams where active=1 && id=?', [socket.decodedToken.id], function(error, rows) {
+			if (error) {
+				userSocketHandler.error('selectTeam', 'Server error')
+				return
+			}
+
+			if (rows[0].count === 3) {
+				userSocketHandler.error('selectTeam', 'Maximum of 3 active teams allowed')
+				return
+			}
+
+			connection.query('select owner from teams where teamNumber=?', [teamNumber], function(error, rows) {
+				if (error) {
+					userSocketHandler.error('selectTeam', 'Server error')
+					return
+				}
+
+				if (!rows.length || rows[0].owner !== socket.decodedToken.id) {
+					userSocketHandler.error('selectTeam', 'Invalid team number')
+					return
+				}
+
+				connection.query('delete from activeTeams where teamNumber=?', [teamNumber], function(error) {
+					if (error) {
+						userSocketHandler.error('selectTeam', 'Server error')
+						return
+					}
+
+					connection.query('insert into activeTeams (id, teamNumber, active) values (?, ?, 1)', [socket.decodedToken.id, teamNumber], function(error) {
+						if (error) {
+							userSocketHandler.error('selectTeam', 'Server error')
+							return
+						}
+
+						userSocketHandler.send('selectTeam', 'Selected team ' + teamNumber)
+					})
+				})
+			})
+		})
+	})
+
+	userSocketHandler.register('deselectTeam', function(teamNumber) {
+		connection.query('select owner from teams where teamNumber=?', [teamNumber], function(error, rows) {
+			if (error) {
+				userSocketHandler.error('deselectTeam', 'Server error')
+				return
+			}
+
+			if (!rows.length || rows[0].owner !== socket.decodedToken.id) {
+				userSocketHandler.error('deselectTeam', 'Invalid team number')
+				return
+			}
+
+			connection.query('delete from activeTeams where active=1 && teamNumber=?', [teamNumber], function(error) {
+				if (error) {
+					userSocketHandler.error('deselectTeam', 'Server error')
+					return
+				}
+
+				userSocketHandler.send('deselectTeam', 'Deselected team ' + teamNumber)
+			})
+		})
+	})
+
 	userSocketHandler.register('updateFirstName', function(firstName) {
 		firstName = firstName || ''
 
