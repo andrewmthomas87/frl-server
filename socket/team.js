@@ -7,7 +7,7 @@ function team(io, socket) {
 	var teamSocketHandler = SocketHandler(io, socket, 'Team')
 
 	teamSocketHandler.register('get', function(teamNumber) {
-		connection.query('select teamNumber, name, website, location, rookieYear, owner, concat(firstName, " ", lastName) userName from teams left outer join users on owner=id where teamNumber=?', [teamNumber], function(error, rows) {
+		connection.query('select a.teamNumber, name, website, location, rookieYear, owner, concat(firstName, " ", lastName) userName, listIndex from teams a left outer join users b on b.id=owner left outer join pickListTeams c on c.id=owner && c.teamNumber=a.teamNumber where a.teamNumber=?', [teamNumber], function(error, rows) {
 			if (error) {
 				teamSocketHandler.error('get', 'Error fetching team')
 				return

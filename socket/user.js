@@ -133,6 +133,127 @@ function user(io, socket) {
 		})
 	})
 
+	userSocketHandler.register('addTeamToPickList', function(teamNumber) {
+		connection.query('select id from pickListTeams where id=? && teamNumber=?', [
+			socket.decodedToken.id,
+			teamNumber
+		], function(error, rows) {
+			if (error) {
+				userSocketHandler.error('addTeamToPickList', 'Server error')
+				return
+			}
+
+			if (rows.length) {
+				userSocketHandler.error('addTeamToPickList', 'Team already added to pick list')
+				return
+			}
+
+			connection.query('select listIndex from pickListTeams where id=? order by listIndex desc limit 1', [socket.decodedToken.id], function(error, rows) {
+				if (error) {
+					userSocketHandler.error('addTeamToPickList', 'Server error')
+					return
+				}
+
+				connection.query('insert into pickListTeams (id, teamNumber, listIndex) values (?, ?, ?)', [
+					socket.decodedToken.id,
+					teamNumber,
+					rows.length ? rows[0].listIndex + 1 : 0
+				], function(error) {
+					if (error) {
+						userSocketHandler.error('addTeamToPickList', 'Server error')
+						return
+					}
+
+					userSocketHandler.send('addTeamToPickList', 'Added team ' + teamNumber + ' to pick list')
+				})
+			})
+		})
+	})
+
+	userSocketHandler.register('getPickListTeams', function() {
+		connection.query('select a.teamNumber, name, listIndex from pickListTeams a, teams b where a.teamNumber=b.teamNumber && id=? order by listIndex asc', [socket.decodedToken.id], function(error, rows) {
+			if (error) {
+				userSocketHandler.error('getPickListTeams', 'Error fetching teams')
+				return
+			}
+
+			userSocketHandler.send('getPickListTeams', rows.map(function(row) {
+				return {
+					teamNumber: row.teamNumber,
+					name: row.name
+				}
+			}))
+		})
+	})
+
+	userSocketHandler.register('movedPickListTeam', function(move) {
+		connection.query('select listIndex from pickListTeams where id=? && teamNumber=?', [
+			socket.decodedToken.id,
+			move.teamNumber
+		], function(error, rows) {
+			if (error) {
+				userSocketHandler.error('movePickListTeam', 'Server error')
+				return
+			}
+
+			connection.query('update pickListTeams set listIndex=listIndex-1 where id=? && listIndex>?', [
+				socket.decodedToken.id,
+				rows[0].listIndex
+			], function(error) {
+				if (error) {
+					userSocketHandler.error('movePickListTeam', 'Server error')
+					return
+				}
+
+				connection.query('update pickListTeams set listIndex=listIndex+1 where id=? && listIndex>?', [
+					socket.decodedToken.id,
+					move.index - 1
+				], function(error) {
+					if (error) {
+						userSocketHandler.error('movePickListTeam', 'Server error')
+						return
+					}
+
+					connection.query('update pickListTeams set listIndex=? where id=? && teamNumber=?', [
+						move.index,
+						socket.decodedToken.id,
+						move.teamNumber
+					], function(error) {
+						if (error) {
+							userSocketHandler.error('movePickListTeam', 'Server error')
+							return
+						}
+
+						userSocketHandler.send('movePickListTeam', true)
+					})
+				})
+			})
+		})
+	})
+
+	userSocketHandler.register('deletedPickListTeam', function(deleted) {
+		connection.query('delete from pickListTeams where id=? && teamNumber=?', [
+			socket.decodedToken.id,
+			deleted.teamNumber
+		], function(error) {
+			if (error) {
+				userSocketHandler.error('deletedPickListTeam', 'Server error')
+				return
+			}
+
+			connection.query('update pickListTeams set listIndex=listIndex-1 where listIndex>?', [
+				deleted.index
+			], function(error) {
+				if (error) {
+					userSocketHandler.error('deletedPickListTeam', 'Server error')
+					return
+				}
+
+				userSocketHandler.send('deletedPickListTeam', 'Removed team ' + deleted.teamNumber + ' from pick list')
+			})
+		})
+	})
+
 	userSocketHandler.register('updateFirstName', function(firstName) {
 		firstName = firstName || ''
 
